@@ -1,0 +1,167 @@
+{% comment %}
+  AI Recommended Bundle
+  Product-page section for AI-powered complementary product recommendations.
+{% endcomment %}
+
+{% if section.settings.enable_section %}
+  {{ 'ai-recommended-bundle.css' | asset_url | stylesheet_tag }}
+
+  <section
+    class="ai-bundle page-width"
+    id="AIRecommendedBundle-{{ section.id }}"
+    data-ai-bundle
+    data-section-id="{{ section.id }}"
+    data-product-handle="{{ product.handle | escape }}"
+    data-product-variant-id="{{ product.selected_or_first_available_variant.id }}"
+    data-recommendation-count="{{ section.settings.recommendation_count }}"
+    data-ai-endpoint="{{ section.settings.ai_endpoint | escape }}"
+    data-fallback-collection="{{ section.settings.fallback_collection.handle | escape }}"
+  >
+    <div class="ai-bundle__header">
+      <h2 class="ai-bundle__title inline-richtext {{ section.settings.heading_size }}">
+        {{ section.settings.section_title | escape }}
+      </h2>
+    </div>
+
+    <div class="ai-bundle__status" data-bundle-status role="status" aria-live="polite">
+      <span class="ai-bundle__spinner" aria-hidden="true"></span>
+      <span>Building recommendations for you…</span>
+    </div>
+
+    <div class="ai-bundle__skeleton" data-bundle-skeleton aria-hidden="true">
+      {% for i in (1..section.settings.recommendation_count) %}
+        <div class="ai-bundle__skeleton-card">
+          <span class="ai-bundle__skeleton-image"></span>
+          <span class="ai-bundle__skeleton-line ai-bundle__skeleton-line--wide"></span>
+          <span class="ai-bundle__skeleton-line"></span>
+          <span class="ai-bundle__skeleton-button"></span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="ai-bundle__content" data-bundle-content hidden>
+      <p class="ai-bundle__reason" data-bundle-reason></p>
+      <div class="ai-bundle__grid" data-bundle-grid></div>
+      <button
+        class="button button--primary ai-bundle__add-all"
+        type="button"
+        data-add-entire-bundle
+      >
+        <span>Add Entire Bundle to Cart</span>
+        <span class="ai-bundle__button-spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <p class="ai-bundle__message" data-bundle-message hidden role="status"></p>
+
+    <script type="application/json" data-product-context>
+      {
+        "title": {{ product.title | json }},
+        "description": {{ product.description | strip_html | truncate: 1200 | json }},
+        "type": {{ product.type | json }},
+        "category": {{ product.category.name | default: product.type | json }},
+        "tags": {{ product.tags | json }},
+        "vendor": {{ product.vendor | json }},
+        "handle": {{ product.handle | json }}
+      }
+    </script>
+
+    {% if section.settings.fallback_collection != blank %}
+      <script type="application/json" data-fallback-products>
+        [
+          {% assign fallback_count = 0 %}
+          {% for fallback_product in section.settings.fallback_collection.products %}
+            {% if fallback_product.available and fallback_product.id != product.id and fallback_count < section.settings.recommendation_count %}
+              {% unless fallback_count == 0 %},{% endunless %}
+              {
+                "id": {{ fallback_product.id | json }},
+                "title": {{ fallback_product.title | json }},
+                "handle": {{ fallback_product.handle | json }},
+                "url": {{ fallback_product.url | json }},
+                "featured_image": {{ fallback_product.featured_image | image_url: width: 700 | json }},
+                "price": {{ fallback_product.price | json }},
+                "available": {{ fallback_product.available | json }},
+                "variants": [
+                  {% for variant in fallback_product.variants %}
+                    {
+                      "id": {{ variant.id | json }},
+                      "title": {{ variant.title | json }},
+                      "available": {{ variant.available | json }},
+                      "price": {{ variant.price | json }}
+                    }{% unless forloop.last %},{% endunless %}
+                  {% endfor %}
+                ]
+              }
+              {% assign fallback_count = fallback_count | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+        ]
+      </script>
+    {% endif %}
+  </section>
+
+  <script src="{{ 'ai-recommended-bundle.js' | asset_url }}" defer="defer"></script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "AI Recommended Bundle",
+  "tag": "section",
+  "class": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_section",
+      "label": "Enable section",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "section_title",
+      "label": "Section title",
+      "default": "AI Recommended Bundle"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "h2", "label": "Small" },
+        { "value": "h1", "label": "Medium" },
+        { "value": "h0", "label": "Large" }
+      ],
+      "default": "h1"
+    },
+    {
+      "type": "select",
+      "id": "recommendation_count",
+      "label": "Number of recommendations",
+      "options": [
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" },
+        { "value": "5", "label": "5" }
+      ],
+      "default": "4"
+    },
+    {
+      "type": "collection",
+      "id": "fallback_collection",
+      "label": "Fallback collection"
+    },
+    {
+      "type": "url",
+      "id": "ai_endpoint",
+      "label": "AI recommendation endpoint",
+      "info": "Public HTTPS endpoint for /api/recommendations. Keep AI keys server-side."
+    }
+  ],
+  "presets": [
+    {
+      "name": "AI Recommended Bundle"
+    }
+  ]
+}
+{% endschema %}

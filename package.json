@@ -1,0 +1,8 @@
+{
+  "name": "shopify-ai-bundle-builder-api",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  }
+}
